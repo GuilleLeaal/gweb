@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html, body {
+  height: 100%;
+  background: #070A08;
+}
+
+* { -webkit-tap-highlight-color: transparent; }
+
+::selection {
+  background: rgba(46,107,77,0.35);
+}
+
+.bg-grid {
+  background-image:
+    radial-gradient(circle at 1px 1px, rgba(234,242,236,0.08) 1px, transparent 0);
+  background-size: 28px 28px;
+}
