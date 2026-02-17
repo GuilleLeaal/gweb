@@ -45,6 +45,7 @@ const packs: Pack[] = [
       "Optimizado para conversión",
       "Preparado para aparecer mejor en Google",
       "Configuración base para buscadores incluida",
+      "Hosting y dominio incluidos en el pack (sin costos adicionales)", 
     ],
     highlight: true,
     promo: {
