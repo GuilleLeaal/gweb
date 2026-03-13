@@ -23,9 +23,9 @@ export default function Header() {
   const whatsappText = useMemo(
     () =>
       encodeURIComponent(
-        "Hola! Quiero una web para mi negocio. Vi GWeb y me interesa la promo/los packs. ¿Me contás cuál me conviene?"
+        "Hola! Quiero una web para mi negocio. Vi GWeb y me interesa la promo/los packs. ¿Me contás cuál me conviene?",
       ),
-    []
+    [],
   );
 
   useEffect(() => {
@@ -35,7 +35,6 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Lock body scroll cuando abre el menú mobile
   useEffect(() => {
     if (!open) return;
     const prev = document.body.style.overflow;
@@ -45,7 +44,6 @@ export default function Header() {
     };
   }, [open]);
 
-  // Cerrar con ESC
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
@@ -54,54 +52,99 @@ export default function Header() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  // Sección activa (para pill)
+  // Active section: por rangos entre puntos medios
   useEffect(() => {
-    const ids = ["top", ...nav.map((n) => n.href.replace("#", ""))];
-    const els = ids
-      .map((id) => document.getElementById(id))
-      .filter(Boolean) as HTMLElement[];
+    let ticking = false;
 
-    if (!els.length) return;
+    const updateActive = () => {
+      const sections = nav
+        .map((item) => {
+          const id = item.href.replace("#", "");
+          const el = document.getElementById(id);
+          if (!el) return null;
 
-    const io = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => (b.intersectionRatio ?? 0) - (a.intersectionRatio ?? 0))[0];
+          return {
+            href: item.href,
+            top: el.getBoundingClientRect().top + window.scrollY,
+          };
+        })
+        .filter(Boolean) as { href: string; top: number }[];
 
-        if (!visible?.target) return;
-
-        const id = (visible.target as HTMLElement).id;
-        const href = id === "top" ? "#top" : `#${id}`;
-
-        if (href !== lastActiveRef.current) {
-          lastActiveRef.current = href;
-          setActive(href);
-        }
-      },
-      {
-        root: null,
-        // Ajuste para header fijo: detecta sección un poco más abajo
-        rootMargin: "-25% 0px -60% 0px",
-        threshold: [0.1, 0.2, 0.35],
+      if (!sections.length) {
+        ticking = false;
+        return;
       }
-    );
 
-    els.forEach((el) => io.observe(el));
-    return () => io.disconnect();
+      // Hace que la sección se marque ANTES de llegar exactamente al top
+      const activationOffset = 340;
+      const y = window.scrollY + activationOffset;
+
+      let current = "#top";
+
+      for (let i = 0; i < sections.length; i++) {
+        const currentSection = sections[i];
+        const nextSection = sections[i + 1];
+
+        const start = currentSection.top;
+        const end = nextSection ? nextSection.top : Number.POSITIVE_INFINITY;
+
+        if (y >= start && y < end) {
+          current = currentSection.href;
+          break;
+        }
+      }
+
+      if (current !== lastActiveRef.current) {
+        lastActiveRef.current = current;
+        setActive(current);
+      }
+
+      ticking = false;
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(updateActive);
+      }
+    };
+
+    updateActive();
+
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll);
+    window.addEventListener("load", onScroll);
+
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      window.removeEventListener("load", onScroll);
+    };
   }, []);
 
   const go = (href: string) => {
     setOpen(false);
+
+    if (href === "#top") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+
     const id = href.replace("#", "");
     const el = document.getElementById(id);
     if (!el) return;
-    el.scrollIntoView({ behavior: "smooth", block: "start" });
+
+    const headerOffset = 96;
+    const top = el.getBoundingClientRect().top + window.scrollY - headerOffset;
+
+    window.scrollTo({
+      top,
+      behavior: "smooth",
+    });
   };
 
   return (
     <header className="fixed inset-x-0 top-0 z-50">
-      {/* top safe area + container */}
       <div
         className={[
           "mx-auto max-w-6xl px-4",
@@ -110,7 +153,6 @@ export default function Header() {
         ].join(" ")}
       >
         <div className="relative">
-          {/* glow sutil */}
           <div
             className={[
               "pointer-events-none absolute -inset-1 rounded-[22px] blur-xl opacity-0 transition-opacity duration-300",
@@ -127,7 +169,6 @@ export default function Header() {
               scrolled ? "bg-black/58 shadow-soft" : "bg-black/35",
             ].join(" ")}
           >
-            {/* Brand */}
             <button
               onClick={() => go("#top")}
               className="flex items-center gap-3"
@@ -139,7 +180,6 @@ export default function Header() {
               </span>
             </button>
 
-            {/* Desktop nav */}
             <nav className="hidden md:flex items-center gap-2 text-sm">
               {nav.map((n) => {
                 const isActive = active === n.href;
@@ -154,7 +194,6 @@ export default function Header() {
                         : "text-gweb-muted hover:text-gweb-text",
                     ].join(" ")}
                   >
-                    {/* active pill */}
                     <span
                       className={[
                         "pointer-events-none absolute inset-0 rounded-full border border-gweb-line",
@@ -168,16 +207,14 @@ export default function Header() {
               })}
             </nav>
 
-            {/* Desktop CTAs */}
             <div className="hidden md:flex items-center gap-3">
               <a
                 href={`${CONTACT.whatsapp}?text=${whatsappText}`}
                 target="_blank"
                 rel="noreferrer"
-                className="group inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold
-                           bg-gweb-green hover:bg-gweb-green2 transition shadow-soft"
+                className="group inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold bg-gweb-green hover:bg-gweb-green2 transition shadow-soft"
               >
-                WhatsApp{" "}
+                WhatsApp
                 <ArrowUpRight
                   size={16}
                   className="transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
@@ -188,10 +225,9 @@ export default function Header() {
                 href={CONTACT.instagram}
                 target="_blank"
                 rel="noreferrer"
-                className="group inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold
-                           border border-gweb-line bg-black/20 hover:bg-white/5 transition"
+                className="group inline-flex items-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold border border-gweb-line bg-black/20 hover:bg-white/5 transition"
               >
-                Instagram{" "}
+                Instagram
                 <ArrowUpRight
                   size={16}
                   className="transition group-hover:translate-x-0.5 group-hover:-translate-y-0.5"
@@ -199,11 +235,9 @@ export default function Header() {
               </a>
             </div>
 
-            {/* Mobile menu button */}
             <button
               onClick={() => setOpen((v) => !v)}
-              className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-xl
-                         border border-gweb-line bg-black/40 hover:bg-white/5 transition"
+              className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-xl border border-gweb-line bg-black/40 hover:bg-white/5 transition"
               aria-label="Abrir menú"
             >
               {open ? <X size={18} /> : <Menu size={18} />}
@@ -211,11 +245,9 @@ export default function Header() {
           </div>
         </div>
 
-        {/* Mobile overlay + sheet */}
         <AnimatePresence>
           {open && (
             <>
-              {/* Overlay */}
               <motion.button
                 type="button"
                 onClick={() => setOpen(false)}
@@ -227,16 +259,14 @@ export default function Header() {
                 aria-label="Cerrar menú"
               />
 
-              {/* Sheet */}
               <motion.div
                 initial={{ opacity: 0, y: -10, scale: 0.98 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: -10, scale: 0.98 }}
                 transition={{ duration: 0.22, ease }}
-                className="relative z-50 mt-3 rounded-2xl border border-gweb-line bg-black/78 backdrop-blur-xl shadow-soft overflow-hidden md:hidden"
+                className="relative z-50 mt-3 overflow-hidden rounded-2xl border border-gweb-line bg-black/78 shadow-soft backdrop-blur-xl md:hidden"
               >
-                <div className="p-3 grid gap-2">
-                  {/* Active indicator small */}
+                <div className="grid gap-2 p-3">
                   <div className="px-2 pb-1 text-xs text-gweb-muted">
                     Navegación
                   </div>
@@ -264,8 +294,7 @@ export default function Header() {
                       href={`${CONTACT.whatsapp}?text=${whatsappText}`}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center justify-between rounded-xl px-4 py-3 font-semibold
-                                 bg-gweb-green hover:bg-gweb-green2 transition shadow-soft"
+                      className="inline-flex items-center justify-between rounded-xl px-4 py-3 font-semibold bg-gweb-green hover:bg-gweb-green2 transition shadow-soft"
                     >
                       WhatsApp <ArrowUpRight size={18} />
                     </a>
@@ -274,15 +303,15 @@ export default function Header() {
                       href={CONTACT.instagram}
                       target="_blank"
                       rel="noreferrer"
-                      className="inline-flex items-center justify-between rounded-xl px-4 py-3 font-semibold
-                                 border border-gweb-line bg-black/20 hover:bg-white/5 transition"
+                      className="inline-flex items-center justify-between rounded-xl px-4 py-3 font-semibold border border-gweb-line bg-black/20 hover:bg-white/5 transition"
                     >
                       Instagram <ArrowUpRight size={18} />
                     </a>
                   </div>
 
-                  <div className="pt-1 text-[11px] text-gweb-muted px-1">
-                    Tip: podés cerrar con <span className="text-gweb-text font-semibold">ESC</span>
+                  <div className="px-1 pt-1 text-[11px] text-gweb-muted">
+                    Tip: podés cerrar con{" "}
+                    <span className="font-semibold text-gweb-text">ESC</span>
                   </div>
                 </div>
               </motion.div>
