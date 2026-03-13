@@ -14,7 +14,7 @@ import {
 import { CONTACT } from "../../config/contact";
 
 import calypsoPreview from "../../assets/projects/calypso.jpg";
-import vittaPreview from "../../assets/projects/vittagroup.jpg";
+import vittaPreview from "../../assets/projects/VittaGroup.jpg";
 
 type Highlight = {
   icon: React.ElementType;
