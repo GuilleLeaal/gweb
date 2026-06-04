@@ -50,7 +50,7 @@ const packs: Pack[] = [
     highlight: true,
     promo: {
       newPrice: "USD 250",
-      note: "Promo lanzamiento válida hasta abril",
+      note: "Promo válida mientras veas este mensaje",
       endsAtISO: "2026-04-01T00:00:00-03:00",
     },
   },
